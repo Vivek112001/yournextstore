@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
 	images: {
 		remotePatterns: [
 			{ hostname: "files.stripe.com" },
+			{ hostname: "fakestoreapi.com" },
 			{ hostname: "d1wqzb5bdbcre6.cloudfront.net" },
 			{ hostname: "*.blob.vercel-storage.com" },
 		],

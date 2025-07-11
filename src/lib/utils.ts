@@ -62,8 +62,8 @@ export const getFieldsByPrefix = <Prefix extends string, Obj extends object>(obj
 			.filter(([key]) => key.startsWith(prefixWithDot))
 			.map(([key, value]) => [key.slice(prefixWithDot.length), value]),
 	) as {
-		[K in keyof Obj as K extends `${Prefix}.${infer Key}` ? Key : never]: Obj[K];
-	};
+			[K in keyof Obj as K extends `${Prefix}.${infer Key}` ? Key : never]: Obj[K];
+		};
 };
 
 export const addPrefixToFields = <Prefix extends string, Obj extends object>(obj: Obj, prefix: Prefix) => {
@@ -178,7 +178,7 @@ export const getDecimalFromStripeAmount = ({ amount: minor, currency }: Money) =
 };
 
 export const formatMoney = ({ amount: minor, currency, locale = "en-US" }: Money & { locale?: string }) => {
-	const amount = getDecimalFromStripeAmount({ amount: minor, currency });
+	const amount = getDecimalFromStripeAmount({ amount: Math.trunc(minor), currency });
 	return new Intl.NumberFormat(locale, {
 		style: "currency",
 		currency,

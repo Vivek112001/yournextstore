@@ -1,15 +1,17 @@
-import type * as Commerce from "commerce-kit";
-import { formatMoney } from "commerce-kit/currencies";
+import { formatMoney } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { MainProductImage } from "@/ui/products/main-product-image";
 import { AddToCartButton } from "./add-to-cart-button";
+import { Product } from "./models/product";
+
+
 
 export const ProductBottomStickyCard = ({
 	product,
 	locale,
 	show,
 }: {
-	product: Commerce.MappedProduct;
+	product: Product;
 	locale: string;
 	show: boolean;
 }) => {
@@ -26,10 +28,10 @@ export const ProductBottomStickyCard = ({
 			<div className="mx-auto w-full max-w-7xl gap-x-2 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
 				<div className="flex items-center gap-x-2 sm:gap-x-4 min-w-0">
 					<div className="shrink-0">
-						{product.images[0] && (
+						{product.image && (
 							<MainProductImage
 								className="w-16 h-16 rounded-lg bg-neutral-100 object-cover object-center"
-								src={product.images[0]}
+								src={product.image}
 								loading="eager"
 								priority
 								alt=""
@@ -38,14 +40,14 @@ export const ProductBottomStickyCard = ({
 					</div>
 					<div className="flex-1 min-w-0">
 						<h3 className="font-semibold text-xs sm:text-base md:text-lg whitespace-nowrap text-ellipsis overflow-clip">
-							{product.name}
+							{product.title}
 						</h3>
 
-						{product.default_price.unit_amount && (
+						{product.price && (
 							<p className="text-xs sm:text-sm">
 								{formatMoney({
-									amount: product.default_price.unit_amount,
-									currency: product.default_price.currency,
+									amount: product.price,
+									currency: "USD",
 									locale,
 								})}
 							</p>
@@ -54,8 +56,8 @@ export const ProductBottomStickyCard = ({
 				</div>
 
 				<AddToCartButton
-					productId={product.id}
-					disabled={product.metadata.stock <= 0}
+					product={product}
+					disabled={false}
 					className="px-3 text-sm sm:text-lg sm:px-8 shrink-0 h-9 sm:h-10"
 				/>
 			</div>

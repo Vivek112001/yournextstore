@@ -19,7 +19,7 @@ export function CommerceGPT() {
 		const cartId = d?.find((d) => d?.operation === "cartAdd")?.cartId;
 		if (cartId) {
 			startTransition(async () => {
-				await setInitialCartCookiesAction(cartId, 1);
+				await setInitialCartCookiesAction(0, 1);
 				await commerceGPTRevalidateAction();
 			});
 		}

@@ -3,7 +3,7 @@ import { safeJsonParse } from "@/lib/utils";
 
 export const CART_COOKIE = "yns_cart";
 
-export type CartCookieJson = { id: string; linesCount: number };
+export type CartCookieJson = { id: number; linesCount: number };
 
 export async function setCartCookieJson(cartCookieJson: CartCookieJson) {
 	try {

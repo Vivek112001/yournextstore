@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { useCartModal } from "@/context/cart-modal";
 import { useTranslations } from "@/i18n/client";
 import { cn } from "@/lib/utils";
+import { Product } from "./models/product";
 
 export const AddToCartButton = ({
-	productId,
+	product,
 	disabled,
 	className,
 }: {
-	productId: string;
+	product: Product
 	disabled?: boolean;
 	className?: string;
 }) => {
@@ -37,7 +38,12 @@ export const AddToCartButton = ({
 
 				startTransition(async () => {
 					const formData = new FormData();
-					formData.append("productId", productId);
+					formData.append("id", String(product.id));
+					formData.append("title", product.title);
+					formData.append("category", product.category);
+					formData.append("description", product.description);
+					formData.append("image", product.image);
+					formData.append("price", String(product.price));
 					await addToCartAction(formData);
 				});
 			}}

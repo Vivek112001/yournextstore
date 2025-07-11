@@ -4,9 +4,9 @@ import type { Metadata } from "next/types";
 import { publicUrl } from "@/env.mjs";
 import { getTranslations } from "@/i18n/server";
 import StoreConfig from "@/store.config";
-import { CategoryBox } from "@/ui/category-box";
 import { ProductList } from "@/ui/products/product-list";
 import { YnsLink } from "@/ui/yns-link";
+import { ProductBottomStickyCard } from "@/ui/product-bottom-sticky-card";
 
 export const metadata = {
 	alternates: { canonical: publicUrl },
@@ -46,15 +46,7 @@ export default async function Home() {
 				</div>
 			</section>
 
-			<ProductList products={products} />
-
-			<section className="w-full py-8">
-				<div className="grid gap-8 lg:grid-cols-2">
-					{StoreConfig.categories.map(({ slug, image: src }) => (
-						<CategoryBox key={slug} categorySlug={slug} src={src} />
-					))}
-				</div>
-			</section>
+			<ProductList />
 		</main>
 	);
 }

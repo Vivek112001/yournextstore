@@ -3,6 +3,7 @@
 import * as Commerce from "commerce-kit";
 import { revalidateTag } from "next/cache";
 import { clearCartCookie, getCartCookieJson, setCartCookieJson } from "@/lib/cart";
+import { Cart, Product } from "@/ui/models/product";
 
 export async function getCartFromCookiesAction() {
 	const cartJson = await getCartCookieJson();
@@ -10,14 +11,14 @@ export async function getCartFromCookiesAction() {
 		return null;
 	}
 
-	const cart = await Commerce.cartGet(cartJson.id);
+	const cart = await fetchCart();
 	if (cart) {
 		return structuredClone(cart);
 	}
 	return null;
 }
 
-export async function setInitialCartCookiesAction(cartId: string, linesCount: number) {
+export async function setInitialCartCookiesAction(cartId: number, linesCount: number) {
 	await setCartCookieJson({
 		id: cartId,
 		linesCount,
@@ -33,7 +34,7 @@ export async function findOrCreateCartIdFromCookiesAction() {
 
 	const newCart = await Commerce.cartCreate();
 	await setCartCookieJson({
-		id: newCart.id,
+		id: 0,
 		linesCount: 0,
 	});
 	revalidateTag(`cart-${newCart.id}`);
@@ -53,25 +54,88 @@ export async function clearCartCookieAction() {
 	revalidateTag(`admin-orders`);
 }
 
-export async function addToCartAction(formData: FormData) {
-	const productId = formData.get("productId");
-	if (!productId || typeof productId !== "string") {
-		throw new Error("Invalid product ID");
+async function fetchCart(): Promise<Cart> {
+	try {
+		const response = await fetch(`https://fakestoreapi.com/carts/${0}`);
+		if (!response.ok) {
+			throw new Error(`HTTP error! Status: ${response.status}`);
+		}
+
+		const data = await (response.json()) as Cart;
+		console.log(data);
+		return data;
+	} catch (error) {
+		console.error('Failed to fetch carts:', error);
+		throw error;
 	}
+}
 
-	const cart = await getCartFromCookiesAction();
+async function createCart(cart: Cart): Promise<Cart> {
 
-	const updatedCart = await Commerce.cartAdd({ productId, cartId: cart?.cart.id });
-
-	if (updatedCart) {
-		await setCartCookieJson({
-			id: updatedCart.id,
-			linesCount: Commerce.cartCount(updatedCart.metadata),
+	try {
+		const response = await fetch('https://fakestoreapi.com/carts', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(cart),
 		});
 
-		revalidateTag(`cart-${updatedCart.id}`);
-		return structuredClone(updatedCart);
+		if (!response.ok) {
+			throw new Error(`HTTP error! Status: ${response.status}`);
+		}
+
+		const data = (await response.json()) as Cart;
+		console.log('Cart created:', data);
+		return data;
+	} catch (error) {
+		console.error('Failed to create cart:', error);
+		throw error;
 	}
+}
+
+
+export async function addToCartAction(formData: FormData) {
+
+	const productId = formData.get("id");
+	const productTitle = formData.get("title");
+	const productCategory = formData.get("category");
+	const productDescription = formData.get("description");
+	const productImage = formData.get("image");
+	const productPrice = formData.get("price");
+
+	if (!productId && !productTitle && !productCategory && !productDescription && !productImage && !productPrice) {
+		throw new Error("Invalid product");
+	}
+
+	// const cart = await fetchCart();
+
+	// const oldProducts = Array.isArray(cart.products) ? cart.products : [];
+
+	const updatedCart = await createCart({
+		userId: 0,
+		id: 0,
+		products: [
+			{
+				id: Number(productId),
+				title: String(productTitle),
+				category: String(productCategory),
+				description: String(productDescription),
+				image: String(productImage),
+				price: Number(productPrice)
+			}
+		]
+	});
+
+	// if (updatedCart) {
+	// 	await setCartCookieJson({
+	// 		id: updatedCart.id,
+	// 		linesCount: 1,
+	// 	});
+
+	// 	// revalidateTag(`cart-${updatedCart.id}`);
+	// 	return structuredClone(updatedCart);
+	// }
 }
 
 export async function increaseQuantity(productId: string) {
@@ -81,7 +145,7 @@ export async function increaseQuantity(productId: string) {
 	}
 	await Commerce.cartChangeQuantity({
 		productId,
-		cartId: cart.cart.id,
+		cartId: 'cart.id',
 		operation: "INCREASE",
 	});
 }
@@ -93,7 +157,7 @@ export async function decreaseQuantity(productId: string) {
 	}
 	await Commerce.cartChangeQuantity({
 		productId,
-		cartId: cart.cart.id,
+		cartId: 'cart.id',
 		operation: "DECREASE",
 	});
 }

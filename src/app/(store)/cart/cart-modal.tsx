@@ -1,9 +1,8 @@
-import { calculateCartTotalNetWithoutShipping } from "commerce-kit";
 import Image from "next/image";
 import { getCartFromCookiesAction } from "@/actions/cart-actions";
 import { Button } from "@/components/ui/button";
 import { getLocale, getTranslations } from "@/i18n/server";
-import { formatMoney, formatProductName } from "@/lib/utils";
+import { formatMoney } from "@/lib/utils";
 import { YnsLink } from "@/ui/yns-link";
 import { CartAsideContainer } from "./cart-aside";
 
@@ -14,12 +13,13 @@ export async function CartModalPage() {
 	// const cart = await Commerce.cartAddOptimistic({ add: searchParams.add, cart: originalCart! });
 	const cart = originalCart;
 
-	if (!cart || cart.lines.length === 0) {
+	if (!cart || cart.products.length === 0) {
 		return null;
 	}
 
-	const currency = cart.lines[0]!.product.default_price.currency;
-	const total = calculateCartTotalNetWithoutShipping(cart);
+	const currency = 'USD';
+	const total = 2000;
+	// const total = calculateCartTotalNetWithoutShipping(cart);
 	const t = await getTranslations("/cart.modal");
 	const locale = await getLocale();
 
@@ -35,16 +35,16 @@ export async function CartModalPage() {
 
 				<div className="mt-8">
 					<ul role="list" className="-my-6 divide-y divide-neutral-200">
-						{cart.lines.map((line) => (
+						{cart.products.map((line) => (
 							<li
-								key={line.product.id}
+								key={line.id}
 								className="grid grid-cols-[4rem_1fr_max-content] grid-rows-[auto_auto] gap-x-4 gap-y-2 py-6"
 							>
-								{line.product.images[0] ? (
+								{line.image ? (
 									<div className="col-span-1 row-span-2 bg-neutral-100">
 										<Image
 											className="aspect-square rounded-md object-cover"
-											src={line.product.images[0]}
+											src={line.image}
 											width={80}
 											height={80}
 											alt=""
@@ -55,17 +55,17 @@ export async function CartModalPage() {
 								)}
 
 								<h3 className="-mt-1 font-semibold leading-tight">
-									{formatProductName(line.product.name, line.product.metadata.variant)}
+									{line.title}
 								</h3>
 								<p className="text-sm font-medium leading-none">
 									{formatMoney({
-										amount: line.product.default_price.unit_amount ?? 0,
-										currency: line.product.default_price.currency,
+										amount: line.price ?? 0,
+										currency: currency,
 										locale,
 									})}
 								</p>
 								<p className="self-end text-sm font-medium text-muted-foreground">
-									{t("quantity", { quantity: line.quantity })}
+									{t("quantity", { quantity: 1 })}
 								</p>
 							</li>
 						))}

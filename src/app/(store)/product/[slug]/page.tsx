@@ -1,11 +1,7 @@
 // import { ProductModel3D } from "@/app/(store)/product/[slug]/product-model3d";
 
-import * as Commerce from "commerce-kit";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next/types";
-import { Suspense } from "react";
-import { ProductImageModal } from "@/app/(store)/product/[slug]/product-image-modal";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -17,43 +13,45 @@ import {
 import { publicUrl } from "@/env.mjs";
 import { getLocale, getTranslations } from "@/i18n/server";
 import { getRecommendedProducts } from "@/lib/search/trieve";
-import { cn, deslugify, formatMoney, formatProductName } from "@/lib/utils";
+import { deslugify, formatMoney } from "@/lib/utils";
 import type { TrieveProductMetadata } from "@/scripts/upload-trieve";
 import { AddToCartButton } from "@/ui/add-to-cart-button";
-import { JsonLd, mappedProductToJsonLd } from "@/ui/json-ld";
 import { Markdown } from "@/ui/markdown";
-import { MainProductImage } from "@/ui/products/main-product-image";
 import { StickyBottom } from "@/ui/sticky-bottom";
 import { YnsLink } from "@/ui/yns-link";
+import { Product } from "@/ui/models/product";
+import { ProductModel3D } from "./product-model3d";
+import { MainProductImage } from "@/ui/products/main-product-image";
+import ImageEditor from "@/ui/components/image-editor";
 
-export const generateMetadata = async (props: {
-	params: Promise<{ slug: string }>;
-	searchParams: Promise<{ variant?: string }>;
-}): Promise<Metadata> => {
-	const searchParams = await props.searchParams;
-	const params = await props.params;
-	const variants = await Commerce.productGet({ slug: params.slug });
+// export const generateMetadata = async (props: {
+// 	params: Promise<{ slug: string }>;
+// 	searchParams: Promise<{ variant?: string }>;
+// }): Promise<Metadata> => {
+// 	const searchParams = await props.searchParams;
+// 	const params = await props.params;
+// 	const variants = await Commerce.productGet({ slug: params.slug });
 
-	const selectedVariant = searchParams.variant || variants[0]?.metadata.variant;
-	const product = variants.find((variant) => variant.metadata.variant === selectedVariant);
-	if (!product) {
-		return notFound();
-	}
-	const t = await getTranslations("/product.metadata");
+// 	const selectedVariant = searchParams.variant || variants[0]?.metadata.variant;
+// 	const product = variants.find((variant) => variant.metadata.variant === selectedVariant);
+// 	if (!product) {
+// 		return notFound();
+// 	}
+// 	const t = await getTranslations("/product.metadata");
 
-	const canonical = new URL(`${publicUrl}/product/${product.metadata.slug}`);
-	if (selectedVariant) {
-		canonical.searchParams.set("variant", selectedVariant);
-	}
+// 	const canonical = new URL(`${publicUrl}/product/${product.metadata.slug}`);
+// 	if (selectedVariant) {
+// 		canonical.searchParams.set("variant", selectedVariant);
+// 	}
 
-	const productName = formatProductName(product.name, product.metadata.variant);
+// 	const productName = formatProductName(product.name, product.metadata.variant);
 
-	return {
-		title: t("title", { productName }),
-		description: product.description,
-		alternates: { canonical },
-	} satisfies Metadata;
-};
+// 	return {
+// 		title: t("title", { productName }),
+// 		description: product.description,
+// 		alternates: { canonical },
+// 	} satisfies Metadata;
+// };
 
 export default async function SingleProductPage(props: {
 	params: Promise<{ slug: string }>;
@@ -62,9 +60,22 @@ export default async function SingleProductPage(props: {
 	const params = await props.params;
 	const searchParams = await props.searchParams;
 
-	const variants = await Commerce.productGet({ slug: params.slug });
-	const selectedVariant = (variants.length > 1 && searchParams.variant) || variants[0]?.metadata.variant;
-	const product = variants.find((variant) => variant.metadata.variant === selectedVariant);
+	async function fetchProductById(id: string) {
+		try {
+			const response = await fetch(`https://fakestoreapi.com/products/${id}`);
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			const data = (await response.json()) as Product;
+			console.log(data);
+			return data; // optional, depending on your use case
+		} catch (error) {
+			console.error('Error fetching product:', error);
+			throw error; // rethrow if you want the caller to handle it
+		}
+	}
+
+	const product = await fetchProductById(params.slug)
 
 	if (!product) {
 		return notFound();
@@ -73,8 +84,8 @@ export default async function SingleProductPage(props: {
 	const t = await getTranslations("/product.page");
 	const locale = await getLocale();
 
-	const category = product.metadata.category;
-	const images = product.images;
+	const category = product.category;
+	const images = product.image;
 
 	return (
 		<article className="pb-12">
@@ -97,43 +108,41 @@ export default async function SingleProductPage(props: {
 					)}
 					<BreadcrumbSeparator />
 					<BreadcrumbItem>
-						<BreadcrumbPage>{product.name}</BreadcrumbPage>
+						<BreadcrumbPage>{product.title}</BreadcrumbPage>
 					</BreadcrumbItem>
-					{selectedVariant && (
-						<>
-							<BreadcrumbSeparator />
-							<BreadcrumbItem>
-								<BreadcrumbPage>{deslugify(selectedVariant)}</BreadcrumbPage>
-							</BreadcrumbItem>
-						</>
-					)}
 				</BreadcrumbList>
 			</Breadcrumb>
 
 			<StickyBottom product={product} locale={locale}>
 				<div className="mt-4 grid gap-4 lg:grid-cols-12">
 					<div className="lg:col-span-5 lg:col-start-8">
-						<h1 className="text-3xl font-bold leading-none tracking-tight text-foreground">{product.name}</h1>
-						{product.default_price.unit_amount && (
+						<h1 className="text-3xl font-bold leading-none tracking-tight text-foreground">{product.title}</h1>
+						{product.price && (
 							<p className="mt-2 text-2xl font-medium leading-none tracking-tight text-foreground/70">
 								{formatMoney({
-									amount: product.default_price.unit_amount,
-									currency: product.default_price.currency,
+									amount: product.price,
+									currency: "USD",
 									locale,
 								})}
 							</p>
 						)}
-						<div className="mt-2">{product.metadata.stock <= 0 && <div>Out of stock</div>}</div>
 					</div>
 
 					<div className="lg:col-span-7 lg:row-span-3 lg:row-start-1">
 						<h2 className="sr-only">{t("imagesTitle")}</h2>
 
 						<div className="grid gap-4 lg:grid-cols-3 [&>*:first-child]:col-span-3">
-							{/* {product.metadata.preview && (
-								<ProductModel3D model3d={product.metadata.preview} imageSrc={product.images[0]} />
-							)} */}
-							{images.map((image, idx) => {
+							{product.image && (
+								<MainProductImage
+									className="w-full rounded-lg bg-neutral-100 object-cover object-center transition-opacity max-w-sm m-auto"
+									src={product.image}
+									loading="eager"
+									priority
+									alt=""
+								/>
+							)}
+
+							{/* {images.map((image, idx) => {
 								const params = new URLSearchParams({
 									image: idx.toString(),
 								});
@@ -166,8 +175,12 @@ export default async function SingleProductPage(props: {
 										)}
 									</YnsLink>
 								);
-							})}
+							})} */}
 						</div>
+
+						<ImageEditor
+							imgUrl={product.image}
+						/>
 					</div>
 
 					<div className="grid gap-8 lg:col-span-5">
@@ -178,51 +191,18 @@ export default async function SingleProductPage(props: {
 							</div>
 						</section>
 
-						{variants.length > 1 && (
-							<div className="grid gap-2">
-								<p className="text-base font-medium" id="variant-label">
-									{t("variantTitle")}
-								</p>
-								<ul role="list" className="grid grid-cols-4 gap-2" aria-labelledby="variant-label">
-									{variants.map((variant) => {
-										const isSelected = selectedVariant === variant.metadata.variant;
-										return (
-											variant.metadata.variant && (
-												<li key={variant.id}>
-													<YnsLink
-														scroll={false}
-														prefetch={true}
-														href={`/product/${variant.metadata.slug}?variant=${variant.metadata.variant}`}
-														className={cn(
-															"flex cursor-pointer items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:bg-neutral-100",
-															isSelected && "border-black bg-neutral-50 font-medium",
-														)}
-														aria-selected={isSelected}
-													>
-														{deslugify(variant.metadata.variant)}
-													</YnsLink>
-												</li>
-											)
-										);
-									})}
-								</ul>
-							</div>
-						)}
-
-						<AddToCartButton productId={product.id} disabled={product.metadata.stock <= 0} />
+						<AddToCartButton product={product} disabled={false} />
 					</div>
 				</div>
 			</StickyBottom>
 
-			<Suspense>
+			{/* <Suspense>
 				<SimilarProducts id={product.id} />
 			</Suspense>
 
 			<Suspense>
 				<ProductImageModal images={images} />
-			</Suspense>
-
-			<JsonLd jsonLd={mappedProductToJsonLd(product)} />
+			</Suspense> */}
 		</article>
 	);
 }
