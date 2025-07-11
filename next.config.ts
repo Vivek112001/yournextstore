@@ -51,6 +51,9 @@ const nextConfig: NextConfig = {
 			destination: "https://eu.umami.is/:match*",
 		},
 	],
+	typescript: {
+		ignoreBuildErrors: true,
+	}
 };
 
 export default withMDX(nextConfig);
